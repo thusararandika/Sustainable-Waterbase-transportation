@@ -14,40 +14,25 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
   <style>
-    :root {
-      --bg: #0b1120;          /* dark blue */
-      --panel: #111827;       /* panel */
-      --text: #e5e7eb;        /* light gray */
-      --accent: #38bdf8;      /* cyan */
-      --border: #1f2937;      /* slate */
-    }
-    html, body { height: 100%; margin: 0; }
-    body { display: grid; grid-template-columns: 320px 1fr; background: var(--bg); color: var(--text); }
-    /* Sidebar */
-    #sidebar { padding: 16px; border-right: 1px solid var(--border); background: var(--panel); overflow-y: auto; }
-    #sidebar h1 { font-size: 1.05rem; margin: 0 0 8px; }
-    #sidebar .sub { font-size: .85rem; opacity: .85; margin-bottom: 10px; }
-    .section { margin: 14px 0; }
-    .legend { background: #0f172a; padding: 10px 12px; font-size: 13px; line-height: 1.5; border-radius: 6px; border: 1px solid var(--border); }
+    :root { --bg:#0b1120; --panel:#111827; --text:#e5e7eb; --accent:#38bdf8; --border:#1f2937; }
+    html, body { height:100%; margin:0; }
+    body { display:grid; grid-template-columns:320px 1fr; background:var(--bg); color:var(--text); }
+    #sidebar { padding:16px; border-right:1px solid var(--border); background:var(--panel); overflow-y:auto; }
+    #sidebar h1 { font-size:1.05rem; margin:0 0 8px; }
+    #sidebar .sub { font-size:.85rem; opacity:.85; margin-bottom:10px; }
+    .section { margin:14px 0; }
+    .legend { background:#0f172a; padding:10px 12px; font-size:13px; line-height:1.5; border-radius:6px; border:1px solid var(--border); }
     .legend .row { display:flex; align-items:center; gap:.5rem; }
     .legend .swatch { width:18px; height:3px; display:inline-block; border-radius:2px; }
-    .filter-list { display: grid; gap: 8px; }
-    .filter-item { display: flex; align-items: center; gap: .5rem; }
+    .filter-list { display:grid; gap:8px; }
+    .filter-item { display:flex; align-items:center; gap:.5rem; }
     .filter-item input { accent-color: var(--accent); }
-    /* Map */
-    #map { height: 100vh; width: 100%; }
-    /* Floating footer info */
-    .footer { position: fixed; left: 12px; bottom: 12px; background: rgba(17,24,39,.9); color: var(--text); padding: 8px 10px; border-radius: 6px; font-size: 12px; border: 1px solid var(--border); pointer-events:none; }
-    /* Buttons */
-    .btn { background: #0ea5e9; color: white; border: none; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-    .btn.secondary { background: #334155; }
+    #map { height:100vh; width:100%; }
+    .footer { position:fixed; left:12px; bottom:12px; background:rgba(17,24,39,.9); color:var(--text); padding:8px 10px; border-radius:6px; font-size:12px; border:1px solid var(--border); pointer-events:none; }
+    .btn { background:#0ea5e9; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; font-size:13px; }
+    .btn.secondary { background:#334155; }
     .row-space { display:flex; gap:8px; flex-wrap:wrap; }
-    /* Mobile */
-    @media (max-width: 900px) {
-      body { grid-template-columns: 1fr; }
-      #sidebar { position: fixed; inset: 0 0 auto 0; height: auto; z-index: 1000; border-right: none; border-bottom: 1px solid var(--border); }
-      #map { height: calc(100vh - 240px); }
-    }
+    @media (max-width:900px){ body{grid-template-columns:1fr;} #sidebar{position:fixed; inset:0 0 auto 0; height:auto; z-index:1000; border-right:none; border-bottom:1px solid var(--border);} #map{height:calc(100vh - 240px);} }
   </style>
 </head>
 <body>
@@ -87,42 +72,51 @@
   <div class="footer">Data source: OpenStreetMap basemap. Canal data: local GeoJSON files.</div>
 
 <script>
-  // ---- 1) Base map --------------------------------------------------------
+  // 1) Base map
   const map = L.map('map', { zoomControl: true }).setView([6.9271, 79.8612], 13);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // Search control (OSM/Nominatim via leaflet-control-geocoder)
-  L.Control.geocoder({
-    defaultMarkGeocode: false,
-    placeholder: 'Search places…'
-  })
-  .on('markgeocode', e => {
-    const bbox = e.geocode.bbox;
-    map.fitBounds(L.latLngBounds(bbox.getSouthEast(), bbox.getNorthWest()));
-  })
-  .addTo(map);
+  // Search (OSM/Nominatim)
+  L.Control.geocoder({ defaultMarkGeocode: false, placeholder: 'Search places…' })
+    .on('markgeocode', e => {
+      const bbox = e.geocode.bbox;
+      map.fitBounds(L.latLngBounds(bbox.getSouthEast(), bbox.getNorthWest()));
+    })
+    .addTo(map);
 
-  // Locate control (find my location)
+  // Locate (GPS)
   L.control.locate({ position: 'topleft', flyTo: true, strings: { title: 'Show my location' } }).addTo(map);
 
-  // ---- 2) Canal catalog (filename + color) -------------------------------
+  // 2) *** PICK ONE OF THE CANAL CATALOGS BELOW ***
+
+  // ---- Option A: files in /public/canals/ (recommended on Vercel) ----
   const canalCatalog = [
-    { key: 'dematagoda',  name: 'Dematagoda Canal',         file: '/canals/dematagoda.geojson',          color: '#FF0000' },
-    { key: 'sebastian',   name: 'St. Sebastian Canal',      file: '/canals/sebastian.geojson',           color: '#0000FF' },
-    { key: 'kittampahuwa',name: 'Kittampahuwa Canal',       file: '/canals/kittampahuwa.geojson',        color: '#008000' },
-    { key: 'kittampahuwamini', name: 'Kittampahuwa Canal Mini', file: '/canals/kittampahuwacanalmini.geojson', color: '#FFFF00' },
-    { key: 'kinda',       name: 'Kinda Canal',              file: '/canals/kindacanal.geojson',          color: '#C627D3' },
-    { key: 'heen',        name: 'Heen Canal',               file: '/canals/heencanal.geojson',           color: '#B2FF1C' }
+    { key: 'dematagoda',  name: 'Dematagoda Canal',              file: '/canals/dematagoda.geojson',            color: '#FF0000' },
+    { key: 'sebastian',   name: 'St. Sebastian Canal',           file: '/canals/sebastian.geojson',             color: '#0000FF' },
+    { key: 'kittampahuwa',name: 'Kittampahuwa Canal',            file: '/canals/kittampahuwa.geojson',          color: '#008000' },
+    { key: 'kittampahuwamini', name: 'Kittampahuwa Canal Mini',  file: '/canals/kittampahuwacanalmini.geojson', color: '#FFFF00' },
+    { key: 'kinda',       name: 'Kinda Canal',                   file: '/canals/kindacanal.geojson',            color: '#C627D3' },
+    { key: 'heen',        name: 'Heen Canal',                    file: '/canals/heencanal.geojson',             color: '#B2FF1C' }
   ];
 
-  const layers = {};              // key -> L.GeoJSON layer
-  const allCanalsGroup = L.featureGroup();
+  // ---- Option B: files next to index.html (uncomment to use) ----
+  // const canalCatalog = [
+  //   { key: 'dematagoda',  name: 'Dematagoda Canal',              file: './dematagoda.geojson',            color: '#FF0000' },
+  //   { key: 'sebastian',   name: 'St. Sebastian Canal',           file: './sebastian.geojson',             color: '#0000FF' },
+  //   { key: 'kittampahuwa',name: 'Kittampahuwa Canal',            file: './kittampahuwa.geojson',          color: '#008000' },
+  //   { key: 'kittampahuwamini', name: 'Kittampahuwa Canal Mini',  file: './kittampahuwacanalmini.geojson', color: '#FFFF00' },
+  //   { key: 'kinda',       name: 'Kinda Canal',                   file: './kindacanal.geojson',            color: '#C627D3' },
+  //   { key: 'heen',        name: 'Heen Canal',                    file: './heencanal.geojson',             color: '#B2FF1C' }
+  // ];
 
-  // ---- 3) Build filter checkboxes ----------------------------------------
+  const layers = {};                    // key -> L.GeoJSON layer
+  const allCanalsGroup = L.featureGroup();
   const filtersEl = document.getElementById('filters');
+
+  // Build filter checkboxes
   canalCatalog.forEach(item => {
     const row = document.createElement('label');
     row.className = 'filter-item';
@@ -130,21 +124,15 @@
     filtersEl.appendChild(row);
   });
 
-  // ---- 4) Fetch and render all canals ------------------------------------
+  // Fetch + render canals
   const fetches = canalCatalog.map(item => fetch(item.file)
-    .then(r => {
-      if (!r.ok) throw new Error(`Failed to load ${item.file}`);
-      return r.json();
-    })
+    .then(r => { if (!r.ok) throw new Error(`Failed to load ${item.file}`); return r.json(); })
     .then(geo => {
       const layer = L.geoJSON(geo, {
-        style: f => ({ color: item.color, weight: 4 }),
+        style: () => ({ color: item.color, weight: 4 }),
         onEachFeature: (f, lyr) => {
-          // Hover highlight
           lyr.on('mouseover', () => lyr.setStyle({ weight: 7 }));
           lyr.on('mouseout',  () => lyr.setStyle({ weight: 4 }));
-
-          // Popup content (fallbacks if properties missing)
           const p = f.properties || {};
           const nm = p.name || item.name;
           const width = (p.width_m !== undefined) ? `${p.width_m} m` : '—';
@@ -154,14 +142,12 @@
           lyr.bindPopup(`<b>${nm}</b><br/>Width: ${width}<br/>Depth: ${depth}<br/>Use: ${use}<br/>Transport potential: ${tp}`);
         }
       });
-
       layers[item.key] = layer;
       layer.addTo(map);
       allCanalsGroup.addLayer(layer);
     })
     .catch(err => {
       console.error(err);
-      // If a file is missing, just ignore but keep the checkbox disabled
       const chk = document.getElementById(`chk_${item.key}`);
       if (chk) { chk.checked = false; chk.disabled = true; }
     })
@@ -173,7 +159,7 @@
     }
   });
 
-  // ---- 5) Wire up filters -------------------------------------------------
+  // Wire up filters
   canalCatalog.forEach(item => {
     const chk = document.getElementById(`chk_${item.key}`);
     chk.addEventListener('change', () => {
@@ -189,20 +175,18 @@
     });
   });
 
-  // ---- 6) Fit/Reset buttons ----------------------------------------------
+  // Fit/Reset buttons
   document.getElementById('fitAllBtn').addEventListener('click', () => {
     if (allCanalsGroup.getLayers().length) {
       map.fitBounds(allCanalsGroup.getBounds(), { padding: [20,20] });
     }
   });
-
   const initialCenter = [6.9271, 79.8612], initialZoom = 13;
-  document.getElementById('resetBtn').addEventListener('click', () => {
-    map.setView(initialCenter, initialZoom);
-  });
+  document.getElementById('resetBtn').addEventListener('click', () => map.setView(initialCenter, initialZoom));
 
-  // ---- 7) Avoid initial rendering glitches --------------------------------
+  // Resize fix (mobile / first paint)
   setTimeout(() => map.invalidateSize(), 300);
 </script>
 </body>
 </html>
+``
