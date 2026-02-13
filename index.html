@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Colombo Canal Transport Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
+
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { height: 100vh; width: 100%; }
+	.legend {
+  background: white;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+
+  min-width: 180px;      /* Prevents narrow collapse */
+  max-height: 240px;     /* Controls size */
+  overflow-y: auto;      /* Scroll if too tall */
+}
+
+
+
+  </style>
+</head>
+
+<body>
+
+	<div id="map"></div>
+
+
+ 
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+  // ✅ Create map ONLY ONCE
+  var map = L.map('map').setView([6.9271, 79.8612], 13); //centered on colombo
+
+// Group to hold all canal layers
+var allCanalsGroup = L.featureGroup();
+
+  // ✅ Add base map ONLY ONCE
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+// ================== LEGEND CONTROL ==================
+var legend = L.control({ position: "bottomleft" });
+
+legend.onAdd = function () {
+  var div = L.DomUtil.create("div", "legend");
+  div.innerHTML = `
+    <b>Canal Routes</b><br>
+    <span style="color:#FF0000;">⬤</span> Dematagoda Canal<br>
+    <span style="color:#0000FF;">⬤</span> St. Sebastian Canal<br>
+    <span style="color:#008000;">⬤</span> Kittampahuwa Canal<br>
+    <span style="color:#FFFF00;">⬤</span> Kittampahuwa Canal Mini<br>
+    <span style="color:#C627D3;">⬤</span> Kinda Canal<br>
+    <span style="color:#B2FF1C;">⬤</span> Heen Canal
+  `;
+  return div;
+};
+
+legend.addTo(map);
+// ===================================================
+
+	// --- CANAL LAYERS ---
+
+  //1. Dematagoda Ela (Red - Primary)
+  fetch('dematagoda.geojson')
+    .then(response => response.json())
+    .then(data => {
+      var canalLayer = L.geoJSON(data, {
+        style: {
+          color: '#FF0000',  weight: 4}, // Standard Red
+        onEachFeature: function (feature, layer) {
+          layer.bindPopup(
+             "<b>" + feature.properties.name + "</b><br>" +
+   	 	"Width: " + feature.properties.width_m + " m<br>" +
+   		 "Depth: " + feature.properties.depth_m + " m<br>" +
+   		 "Use: " + feature.properties.primary_use + "<br>" +
+    		"Transport potential: " + feature.properties.transport_potential
+          );
+        }
+      }).addTo(map);
+	canalLayer.addTo(map);
+	allCanalsGroup.addLayer(canalLayer);
+   
+// St. Sebastian Canal (Blue)
+	fetch('sebastian.geojson')
+  .then(res => res.json())
+  .then(data => {
+
+    var sebastianLayer = L.geoJSON(data, {
+      style: { color: '#0000FF', weight: 4 },
+      onEachFeature: function (feature, layer) {
+        layer.bindPopup("<b>St. Sebastian Canal</b>");
+      }
+    });
+
+    sebastianLayer.addTo(map);
+    allCanalsGroup.addLayer(sebastianLayer);
+  });
+
+
+// Kittampahuwa Canal (Dark Green - High Contrast)
+	fetch('kittampahuwa.geojson')
+  .then(res => res.json())
+  .then(data => {
+
+    var kittampahuwaLayer = L.geoJSON(data, {
+      style: { color: '#008000', weight: 4 },
+      onEachFeature: function (feature, layer) {
+        layer.bindPopup("<b>Kittampahuwa Canal</b>");
+      }
+    });
+
+    kittampahuwaLayer.addTo(map);
+    allCanalsGroup.addLayer(kittampahuwaLayer);
+  });
+
+
+
+	// Kittampahuwa Canal mini (Yellow)
+	fetch('kittampahuwacanalmini.geojson')
+  .then(res => res.json())
+  .then(data => {
+
+    var kittampahuwaMiniLayer = L.geoJSON(data, {
+      style: { color: '#FFFF00', weight: 4 }
+    });
+
+    kittampahuwaMiniLayer.addTo(map);
+    allCanalsGroup.addLayer(kittampahuwaMiniLayer);
+  });
+
+
+	// Kinda canal (Pink/Magenta)
+	fetch('kindacanal.geojson')
+  .then(res => res.json())
+  .then(data => {
+
+    var kindaLayer = L.geoJSON(data, {
+      style: { color: '#C627D3', weight: 4 }
+    });
+
+    kindaLayer.addTo(map);
+    allCanalsGroup.addLayer(kindaLayer);
+  });
+
+
+	//Heen canal (Neon Green)
+	fetch('heencanal.geojson')
+  .then(res => res.json())
+  .then(data => {
+
+    var heenLayer = L.geoJSON(data, {
+      style: { color: '#B2FF1C', weight: 4 }
+    });
+
+    heenLayer.addTo(map);
+    allCanalsGroup.addLayer(heenLayer);
+  });
+
+
+
+      // ✅ Zoom map to canal automatically
+      map.fitBounds(canalLayer.getBounds());
+    })
+    .catch(error => console.error(error));
+
+	// Fix initial rendering issue
+	setTimeout(function () {
+  	map.invalidateSize();
+	}, 300);
+
+setTimeout(function () {
+  map.fitBounds(allCanalsGroup.getBounds(), {
+    padding: [20, 20]
+  });
+}, 800);
+
+</script>
+
+</body>
+</html>
